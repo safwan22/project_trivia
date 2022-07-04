@@ -6,21 +6,58 @@ import random
 
 from models import setup_db, Question, Category
 
+CATEGORY_ALL = '0'
 QUESTIONS_PER_PAGE = 10
+
+def get_ids_from_questions(questions, previous_ids):
+    questions_formatted = [q.format() for q in questions]
+    current_ids = [q.get('id') for q in questions_formatted]
+
+    ids = list(set(current_ids).difference(previous_ids))
+
+    return ids
 
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
     setup_db(app)
+    CORS(app)
+    CORS = CORS(app, resources={r"/api/*": {"origins": "*"}})
+
 
     """
     @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
     """
+    @app.after_request
+    def after_request(response):
+       response.headers.add(
+          'Access-Control-Allow-Headers', 'Content-Type, Authorization, true'
+        )
+       response.headers.add(
+          'Access-Control-Allow-Methods', 'GET,PUT,POST, DELETE, OPTIONS'
+        )
 
+       return response
     """
     @TODO: Use the after_request decorator to set Access-Control-Allow
     """
+    @app.route('/categories', methods=['GET'])
+    def retrieve_categories():
+         
+        try:
+            categories = Category.query.order_by(Category.id).all()
 
+            return jsonify({
+              'success': True,
+              'categories': {
+                category.id: category.type for category in categories
+              }
+            })
+        except Exception:
+            abort(422)
+
+    @app.route('/questions', methods=['GET'])
+    def retrieve_questions():
     """
     @TODO:
     Create an endpoint to handle GET requests
